@@ -1,404 +1,505 @@
-# OrderFlowX: Concurrency-Safe Order Processing System
+# OrderFlow - Production-Grade Order Processing & Test Automation Framework
 
-A transactional order processing system designed to ensure concurrency safety, idempotency, and data integrity under real-world conditions.
+[![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PyTest](https://img.shields.io/badge/PyTest-Automation-0A9EDC?logo=pytest&logoColor=white)](https://pytest.org/)
+[![SQL Server](https://img.shields.io/badge/SQL_Server-2022-CC2927?logo=microsoftsqlserver&logoColor=white)](https://www.microsoft.com/sql-server)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions)
 
-Built using FastAPI, SQL Server, and Docker, this system simulates concurrent order workflows and ensures correctness through deterministic automated testing.
+OrderFlow is a production-style order processing system designed to demonstrate concurrency-safe order processing, idempotent API design, transactional integrity, and end-to-end automation testing.
 
----     
-## Failure-Proof Scenarios
+Built with FastAPI, SQL Server, Docker, and GitHub Actions, the project validates business-critical workflows through automated API, database, integration, system, end-to-end, and performance tests.
 
-### Concurrent Order Race Condition
-Two users attempt to purchase the last item simultaneously:
-
-Thread-1 → SUCCESS (order created)  
-Thread-2 → FAILED (out of stock)
-Response → 409 Conflict (Out of Stock)
-
-✔ Prevents overselling using atomic SQL update + row-level locking.
-
+The project simulates real-world backend workflows using FastAPI, SQL Server, Docker, and PyTest while validating business-critical scenarios through automated API, database, integration, system, end-to-end, and performance tests.
 ---
 
-### Idempotent Order Creation
+## Overview
 
-Request-1 (Idempotency-Key: abc123) → Order Created  
-Request-2 (same key) → Returned existing order  
+Modern distributed systems must remain correct under concurrent requests, retries, transaction failures, and inventory contention. OrderFlow demonstrates how these challenges can be addressed using transactional database operations, row-level locking, idempotent APIs, and automated validation.
 
-✔ Prevents duplicate order creation under retries.
-
----
-
-### Transaction Rollback (Cancel Flow)
-
-Before cancel → stock = 0  
-After cancel → stock = 1  
-
-✔ Ensures inventory consistency via transactional rollback.
-## Key Capabilities
+The project includes:
 
 - Concurrency-safe order processing
-- Idempotent API design using Idempotency-Key
-- Transaction-safe inventory updates
-- SQL-level locking (UPDLOCK, ROWLOCK)
-- State transition validation
-- End-to-end + performance testing
-- Fully Dockerized execution
-- CI/CD validation via GitHub Actions
-
-## Design Decisions
-
-- **Pessimistic locking (UPDLOCK, ROWLOCK):** Prevents race conditions and overselling by acquiring row-level locks during transactions, ensuring safe concurrent updates without escalating to table-level locks.
-
-- **Idempotency-Key strategy:** Ensures repeated requests do not create duplicate orders, making APIs safe under retries.
-
-- **SQL Server choice:** Provides strong transactional guarantees and fine-grained locking control for concurrency-heavy workflows.
-
-## Project Overview
-
-OrderFlowX is a transactional order processing system designed to ensure correctness under concurrent workloads.
-
-It focuses on:
-
-- Safe concurrent order processing without overselling  
-- Idempotent request handling to prevent duplicate orders  
-- Atomic inventory updates with transaction guarantees  
-- State-driven order lifecycle management  
-- Deterministic end-to-end testing using Dockerized infrastructure 
----
-
-## Project Structure
-
-```
-backend/
-├── domain/
-│   └── transitions.py              # Defines order state machine and valid state transitions
-├── repositories/
-│   ├── order_repository.py         # Handles order persistence, queries, and transactional DB operations
-│   └── user_repository.py          # Manages user data access and authentication-related DB logic
-├── schemas/
-│   ├── auth_schema.py              # Pydantic models for auth requests/responses (validation layer)
-│   └── order_schema.py             # Data models for order creation, updates, and API contracts
-├── services/
-│   ├── auth_service.py             # Business logic for authentication and user workflows
-│   └── order_service.py            # Core order processing logic (idempotency, concurrency handling)
-├── db.py                           # Database connection management and session handling
-├── logging_config.py               # Centralized logging setup with structured logs and correlation IDs
-└── main.py                         # FastAPI application entry point and route registration
-
-config/
-└── config.py                       # Environment configuration (DB settings, secrets, runtime configs)
-
-core/
-├── api_client.py                   # Reusable HTTP client for API testing and request abstraction
-└── failure_types.py                # Custom error types and failure classification for testing
-
-reporting/
-└── excel_report.py                 # Generates structured test reports (Excel format)
-
-reports/
-└── screenshots/                   # Stores Playwright/UI test artifacts and failure evidence
-
-tests/
-├── api/
-│   ├── test_create_order.py        # Validates order creation API (happy path + edge cases)
-│   ├── test_cancel_order_api.py    # Tests cancellation flow and inventory restoration
-│   ├── test_get_products.py        # Verifies product listing and pagination logic
-│   ├── test_main_endpoints.py      # Covers core API endpoints for availability and correctness
-│   ├── test_signup.py              # Validates user signup and authentication flows
-│   └── test_edge_cases.py          # Covers negative scenarios and input validation failures
-├── db/
-│   ├── db_utils.py                 # Utility functions for DB setup, teardown, and helpers
-│   ├── test_db_insert_rollback.py  # Ensures transactional rollback behavior works correctly
-│   ├── test_db_metadata.py         # Validates schema integrity and metadata consistency
-│   └── test_db_sanity.py           # Basic DB connectivity and sanity checks
-├── e2e/
-│   ├── test_order_lifecycle.py     # Full order lifecycle (create → process → complete)
-│   ├── test_order_concurrency.py   # Validates concurrent order handling (race conditions)
-│   ├── test_order_idempotency.py   # Ensures duplicate requests don’t create duplicate orders
-│   ├── test_create_order_api_db.py # Verifies API + DB consistency for order creation
-│   └── test_update_product.py      # End-to-end product update validation
-├── performance/
-│   └── test_sla.py                 # Measures response times and SLA compliance under load
-├── services/
-│   ├── test_order_service_unit.py  # Unit tests for order service logic
-│   └── test_inventory_and_order_service.py # Validates inventory updates with order workflows
-├── system/
-│   ├── test_orders_system.py       # Cross-component validation (API + DB + services)
-│   └── test_db_consistency.py      # Ensures data consistency across operations
-├── unit/
-│   └── test_transitions.py         # Unit tests for state transition logic
-└── helpers/
-    └── order_helpers.py            # Shared test utilities and reusable helper functions
-
-# Root Configuration
-docker-compose.yml                 # Defines multi-container setup (API + DB + test runner)
-Dockerfile                         # Builds application container image
-init.sql / schema.sql              # Database schema and initialization scripts
-requirements.txt                   # Python dependencies
-pytest.ini                         # PyTest configuration and test settings
-conftest.py                        # Shared fixtures and test setup configuration
-db-init.sh                         # Initializes database inside Docker container
-```
-## Architecture
-
-Client / Automated Tests  
-↓  
-FastAPI (API Layer)  
-↓  
-Service Layer (Business Logic)  
-↓  
-Repository Layer (Data Access)  
-↓  
-SQL Server (Dockerized)  
-
-### Core Principles
-
-- One transaction per business operation  
-- Atomic inventory updates  
-- Idempotent order creation  
-- Explicit state transition validation  
-- Isolated database using Docker  
-- Deterministic test execution  
-
+- Idempotent REST APIs
+- Atomic SQL transactions
+- Inventory consistency validation
+- State-driven order lifecycle
+- Dockerized execution
+- CI/CD using GitHub Actions
 ---
 
 ## Technology Stack
 
-- **Backend:** FastAPI  
-- **Database:** Microsoft SQL Server 2022 (Docker)  
-- **Driver:** pyodbc + ODBC Driver 18  
-- **Testing:** PyTest (unit, integration, system, e2e, performance)  
-- **UI Testing:** Playwright  
-- **CI/CD:** GitHub Actions  
-- **Containerization:** Docker + Docker Compose  
+| Layer | Technology |
+|--------|------------|
+| Backend | FastAPI |
+| Database | Microsoft SQL Server 2022 |
+| Testing | PyTest, Playwright |
+| API Validation | Requests |
+| Database Validation | pyodbc |
+| Containerization | Docker, Docker Compose |
+| CI/CD | GitHub Actions |
+| Architecture | Repository + Service Pattern |
+| Test Types | Unit, Integration, System, End-to-End, Performance |
+| Current Status | 102 Automated Tests Passing |
 ---
+## Engineering Challenges Solved
 
-## Core Functional Capabilities
+OrderFlow is designed to address common challenges found in distributed order processing systems.
 
-### Order Lifecycle Management
-- Create order (Idempotency-Key protected)
-- Confirm, ship, complete
-- Cancel (with inventory restore)
-- Refund flow
-- Return lifecycle handling
+### 1. Concurrent Order Processing
 
-### Inventory Control
-- Atomic stock deduction
-- Stock restoration on cancel
-- Concurrency-safe SQL updates
+**Scenario**
 
-### Data Integrity
-- SQL row-level locking (UPDLOCK, ROWLOCK)
-- Explicit transaction commit/rollback
-- Parameterized queries (SQL injection safe)
+Two customers attempt to purchase the last available item at the same time.
 
-### Pagination
-- OFFSET / FETCH SQL pagination
-- Total count metadata
+```text
+Customer A ─────► Order Created
+Customer B ─────► 409 Conflict (Out of Stock)
+```
 
----
+**Implementation**
 
-## Concurrency & Idempotency Strategy
+- Atomic inventory updates
+- SQL Server row-level locking (`UPDLOCK`, `ROWLOCK`)
+- Transaction boundaries with explicit commit and rollback
 
-Order creation is protected using:
+**Outcome**
 
-- Atomic inventory update with stock >= quantity
-- Idempotency-Key header
-- Unique constraint on idempotency_key
-- Explicit transaction boundaries
-
-This prevents:
-
-- Double order creation
-- Overselling stock
-- Race condition inconsistencies
+Overselling is prevented while maintaining inventory consistency.
 
 ---
 
-## Test Coverage
+### 2. Idempotent Order Creation
 
-- Unit Tests  
-- Integration Tests  
-- System Tests  
-- End-to-End Tests  
-- Performance Tests  
+**Scenario**
 
-✔ Validates concurrency, idempotency, and transactional integrity under load  
-✔ 109 automated tests passing across layers  
-✔ Deterministic execution using isolated Docker environment  
-✔ CI pipeline enforces test stability on every change  
+A client retries the same request because of a timeout or network interruption.
+
+```text
+Request 1 (Idempotency-Key: abc123)
+        │
+        ▼
+Order Created
+
+Request 2 (Idempotency-Key: abc123)
+        │
+        ▼
+Existing Order Returned
+```
+
+**Implementation**
+
+- Unique constraint on `idempotency_key`
+- Idempotency-Key request header
+- Duplicate request detection
+
+**Outcome**
+
+Repeated requests never create duplicate orders.
+
 ---
-## Run Locally
 
-### Prerequisites
+### 3. Transaction Rollback
 
-- Docker Desktop installed and running  
-- Minimum 8GB RAM recommended  
-- WSL2 enabled (for Windows users)  
-- Ports 8000 and 14333 must be free  
+**Scenario**
+
+An order is cancelled after inventory has already been deducted.
+
+```text
+Before Cancel
+Stock = 0
+
+Cancel Order
+
+After Cancel
+Stock = 1
+```
+
+**Implementation**
+
+- Explicit SQL transactions
+- Commit and rollback
+- Inventory restoration
+
+**Outcome**
+
+Database consistency is preserved even when business operations fail.
+---
+
+## Architecture
+
+OrderFlow follows a layered architecture that separates API routing, business logic, data access, and domain rules. This separation improves maintainability, testability, and scalability.
+
+```text
+                   Client / Test Suite
+                            │
+                            ▼
+                  FastAPI REST API
+                            │
+                  Request Validation
+                            │
+                            ▼
+                  Service Layer
+           ┌────────────────┴────────────────┐
+           │                                 │
+     Order Service                   Auth Service
+           │                                 │
+           └────────────────┬────────────────┘
+                            ▼
+                 Repository Layer
+           ┌────────────────┴────────────────┐
+           │                                 │
+     Order Repository                User Repository
+                            │
+                            ▼
+                    SQL Server Database
+```
+
+### Design Principles
+
+- Layered architecture with clear separation of concerns
+- Repository pattern for database abstraction
+- Service layer for business rules and transaction management
+- Domain-driven order state transitions
+- Pydantic models for request and response validation
+- SQL Server transactions for data consistency
 
 ---
 
-### Docker Execution (Recommended)
+## Test Strategy
 
-#### Clone Repository
+The project validates functionality at multiple testing layers to ensure business correctness, database integrity, API reliability, and production readiness.
+
+| Test Layer | Purpose |
+|------------|---------|
+| Unit Tests | Validate business logic and state transitions |
+| API Tests | Verify REST endpoints, request validation, and responses |
+| Database Tests | Validate schema, constraints, and transactional behavior |
+| Integration Tests | Verify interaction between API and SQL Server |
+| System Tests | Validate complete business workflows |
+| End-to-End Tests | Verify complete order lifecycle and concurrency scenarios |
+| Performance Tests | Measure API response times and SLA compliance |
+
+Current Status
+
+- **102 automated tests passing**
+- API, Database, Service, and End-to-End coverage
+- Excel report generation after every execution
+- Docker-based execution for reproducible test environments
+
+---
+
+## Project Structure
+
+The project is organized using a layered architecture that separates business logic, data access, domain rules, configuration, reporting, and automated testing.
+
+| Directory | Responsibility |
+|-----------|----------------|
+| `backend/` | FastAPI application, business logic, repositories, schemas, and domain rules |
+| `config/` | Application configuration and environment settings |
+| `core/` | Shared utilities, reusable API client, and failure classification |
+| `tests/` | Unit, API, Database, Integration, System, End-to-End, and Performance tests |
+| `reporting/` | Excel report generation for automated test execution |
+| `reports/` | Generated reports, screenshots, and execution artifacts |
+| `docker-compose.yml` | Multi-container orchestration for API, SQL Server, and test execution |
+| `Dockerfile` | Builds the application image |
+| `schema.sql` | Database schema |
+| `init.sql` | Database initialization script |
+| `pytest.ini` | PyTest configuration |
+| `conftest.py` | Shared fixtures and test configuration |
+
+---
+## REST API
+
+OrderFlow exposes RESTful endpoints for authentication, product management, inventory management, health monitoring, and order processing.
+
+### Authentication
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/auth/signup` | Register a new user |
+| POST | `/auth/login` | Authenticate a user |
+
+### Health
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/health` | Liveness endpoint |
+| GET | `/ready` | Readiness endpoint |
+
+### Products
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/products` | Retrieve all products |
+| GET | `/products/{product_id}` | Retrieve a product by ID |
+| PATCH | `/products/{product_id}` | Update product price |
+| DELETE | `/products/{product_id}` | Delete a product |
+
+### Inventory
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/inventory/restock` | Restock inventory |
+
+### Orders
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/orders` | Create a new order |
+| GET | `/orders` | Retrieve all orders |
+| GET | `/orders/{order_id}` | Retrieve an order by ID |
+| POST | `/orders/{order_id}/confirm` | Confirm an order |
+| POST | `/orders/{order_id}/ship` | Ship an order |
+| POST | `/orders/{order_id}/complete` | Complete an order |
+| POST | `/orders/{order_id}/cancel` | Cancel an order |
+| POST | `/orders/{order_id}/return-request` | Request a return |
+| POST | `/orders/{order_id}/return-received` | Mark returned item as received |
+| POST | `/orders/{order_id}/refund` | Refund an order |
+
+---
+
+### API Documentation
+
+The project exposes interactive API documentation using FastAPI's built-in Swagger UI.
+
+![Swagger UI](assets/images/swagger-ui.png)
+
+---
+
+
+## API Design
+
+The REST API follows production-oriented design principles.
+
+- Stateless request processing
+- Idempotent order creation using an `Idempotency-Key`
+- Request and response validation using Pydantic
+- Proper HTTP status codes
+- Transaction-safe order processing
+- Inventory consistency through SQL transactions
+- Docker health check endpoints
+
+---
+## Getting Started
+
+### Clone Repository
+
 ```bash
 git clone https://github.com/saisubramanyam-dev/elite-sdet-automation.git
 cd elite-sdet-automation
 ```
 
-#### Run Entire Stack
+---
+
+## Quick Start (Docker)
+
+The recommended way to run OrderFlow is using Docker Compose. This provisions SQL Server, initializes the database, starts the FastAPI application, and executes the complete automated test suite.
+
+### Run the Complete Stack
+
 ```bash
-docker compose down -v  
-docker compose up --build --abort-on-container-exit  
+docker compose down -v
+docker compose up --build --abort-on-container-exit
 ```
 
-Alternative:
+### Alternative
+
+Run only the test container output while hiding the SQL Server and API container logs.
+
 ```bash
 docker compose up --abort-on-container-exit --no-attach sqlserver --no-attach api
 ```
 
-✔ Runs full stack (API + DB + tests)  
-✔ No local SQL installation required  
-✔ Fully isolated execution  
-
----
-
-## Local Execution (Optional – Coverage & Reports)
-
-### To run in isolated environment
-
-#### Terminal 1
-```bash
-python -m venv (give any name ex:venv)
-python -m venv venv
-venv\scripts\activate
-python -m uvicorn backend.main:app
-```
-
-#### Terminal 2
-```bash
-venv\scripts\activate
-python -m pytest -v -s
-python -m pytest --cov=backend --cov-report=html 
-python -m pytest --cov=backend --cov-report=term-missing
-```
-
-## Architecture & Infrastructure
-
 ### Docker Services
 
-| Service     | Port Mapping     | Purpose                |
-|-------------|------------------|------------------------|
-| SQL Server  | 14333 → 1433     | Isolated database      |
-| API         | 8000             | FastAPI application    |
-| Tests       | Internal network | Automated validation   |
+| Service | Description |
+|---------|-------------|
+| `orderflow_sqlserver` | SQL Server 2022 database |
+| `orderflow_api` | FastAPI application |
+| `orderflow_tests` | Executes the complete automated test suite |
 
-Docker SQL runs on port **14333** to avoid conflict with local SQL Server (**1433**).
+### Running Containers
+
+Docker Compose provisions the complete application stack, including SQL Server, the FastAPI backend, and the automated test runner.
+
+![Docker Containers](assets/images/docker-containers.png)
+
+During execution Docker Compose will:
+
+- Start SQL Server
+- Initialize the database
+- Start the FastAPI application
+- Wait until the API passes its health checks
+- Execute the complete automated test suite
+- Stop all containers after test execution
+
+No local SQL Server installation is required.
+
+---
+
+## Local Development
+
+### Prerequisites
+
+Install the following software before running the project locally:
+
+- Python 3.12+
+- Git
+- Docker Desktop
+- Microsoft SQL Server ODBC Driver 18
+- SQL Server Management Studio (Optional)
+
+### Create a Virtual Environment
+
+```bash
+python -m venv .venv
+```
+
+### Activate the Virtual Environment
+
+**Windows**
+
+```bash
+.venv\Scripts\activate
+```
+
+**Linux / macOS**
+
+```bash
+source .venv/bin/activate
+```
+
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Start the Application
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+The API will be available at:
+
+```text
+http://localhost:8000
+```
+
+Interactive API documentation:
+
+```text
+http://localhost:8000/docs
+```
+
+### Execute the Test Suite
+
+```bash
+pytest -v -s
+```
 
 ---
 
-## Health Endpoints
-
-- `/health` → Liveness probe  
-- `/ready` → Database readiness check  
-
----
-
-## Security & Hardening
-
-- Parameterized SQL queries (SQL injection safe)  
-- Centralized exception handling  
-- Controlled 500 error responses  
-- Docker-isolated database environment  
-- Environment-based configuration  
-- Optional JWT-based authentication  
-- Structured request logging  
-- Correlation ID per request  
-
----
 
 ## CI/CD Pipeline
 
-GitHub Actions automatically executes:
+OrderFlow uses GitHub Actions to automatically validate every push and pull request.
 
-- Unit Tests  
-- Integration + End-to-End Tests  
-- Performance Tests  
+### GitHub Actions Workflow
 
-✔ All tests run via Docker Compose  
-✔ Ensures consistent, reproducible execution  
+The project uses GitHub Actions to build, test, and validate every code change.
 
-### Artifacts Generated
+![GitHub Actions](assets/images/github-actions.png)
 
-- HTML test reports  
-- Coverage reports  
+The pipeline performs the following steps:
+
+1. Builds the Docker image
+2. Starts SQL Server 2022
+3. Initializes the database schema
+4. Starts the FastAPI application
+5. Waits for health checks to pass
+6. Executes the complete automated test suite
+7. Publishes test results
+8. Fails the pipeline immediately if any test fails
 
 ---
 
-## Database Isolation Strategy
+### Pipeline Stages
 
-- Local SQL Server → `localhost:1433`  
-- Docker SQL Server → `localhost:14333`  
+| Stage | Description |
+|--------|-------------|
+| Unit Tests | Validates business logic |
+| API Tests | Verifies REST API functionality |
+| Database Tests | Validates schema and transactional behavior |
+| End-to-End Tests | Tests complete business workflows |
+| System Tests | Verifies cross-component interactions |
+| Performance Tests | Validates SLA requirements |
 
-Prevents:
+The CI pipeline ensures every code change is automatically validated before being merged.
 
-- Split-brain database conflicts  
-- Accidental local data contamination  
+---
 
-### Verification
+## Test Reports
 
-```bash
-docker exec -it elite_sqlserver \
-/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P <password> -C \
--Q "SELECT @@SERVERNAME"
-```
+Every execution generates structured reports that simplify debugging and execution analysis.
 
-## Production Readiness
+Generated artifacts include:
+
+- Excel execution reports
+- PyTest logs
+- Docker container logs
+- Coverage reports
+- Failure screenshots (when applicable)
+
+These reports help identify failures, validate execution history, and simplify root-cause analysis.
+
+---
+
+
+## Production Engineering Practices
+
+OrderFlow follows engineering practices commonly used in production backend systems.
+
+- Layered Architecture
+- Repository Pattern
+- Service Layer
+- Domain Layer
+- Atomic SQL Transactions
+- Row-Level Locking
+- Idempotent API Design
+- Structured Logging
+- Health Checks
+- Dockerized Deployment
+- Continuous Integration
+- Automated Regression Testing
+
+---
+## Project Status
+
+OrderFlow is a production-style backend application and automation framework demonstrating modern software engineering and testing practices.
 
 ### Current Capabilities
 
-- Transactional integrity with explicit commit/rollback  
-- Concurrency-safe operations under load  
-- Idempotent API design to prevent duplicate processing  
-- Structured logging with request traceability  
-- Fully Dockerized orchestration  
-- CI pipeline enforcing automated validation  
-
-### Recommended Enhancements
-
-- Secrets management integration  
-- Role-based access control (RBAC)  
-- Database migrations (Alembic)  
-- Connection pooling optimization  
-- Observability stack (Prometheus / OpenTelemetry)  
-
----
-
-## System Status
-
-- Dockerized SQL Server with isolated environment  
-- Secure database connectivity (ODBC Driver 18, SSL enabled)  
-- Transaction-safe operations with concurrency protection  
-- 109 automated tests passing across all layers  
-- CI pipeline validated for consistent execution  
-- One-command Docker execution supported  
-
----
-
-## Performance Note
-
-Certain performance tests may show higher latency in local Windows environments.
-
-Reason:
-- Overhead from Docker ↔ WSL2 networking  
-- TLS handshake and connection setup cost  
-
-Impact:
-- Increased response time (~2s per request)  
-- Does not reflect actual service logic performance  
+- Layered FastAPI architecture
+- SQL Server integration
+- Dockerized development and testing
+- Automated CI/CD with GitHub Actions
+- Concurrency-safe order processing
+- Idempotent REST API design
+- Atomic SQL transactions
+- API, Database, Unit, System, End-to-End, and Performance testing
+- 102 automated tests passing
 
 ---
 
 ## Author
 
 Sai Subramanyam
+
+Software Development Engineer in Test (SDET)
+
+If you have feedback or suggestions, feel free to open an issue or submit a pull request.
