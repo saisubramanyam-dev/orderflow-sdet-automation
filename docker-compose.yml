@@ -2,7 +2,7 @@ services:
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: elite_sqlserver
+    container_name: orderflow_sqlserver
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${DB_PASSWORD:-StrongPass@123}
@@ -36,7 +36,7 @@ services:
 
   api:
     build: .
-    container_name: elite_api
+    container_name: orderflow_api
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -59,12 +59,12 @@ services:
 
   tests:
     build: .
-    container_name: elite_tests
+    container_name: orderflow_tests
     depends_on:
       api:
         condition: service_healthy
     environment:
-      API_BASE_URL: http://elite_api:8000
+      API_BASE_URL: http://api:8000
       DB_SERVER: sqlserver
       DB_PORT: 1433
       DB_NAME: TravelXDB
