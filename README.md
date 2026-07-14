@@ -288,8 +288,8 @@ The REST API follows production-oriented design principles.
 ### Clone Repository
 
 ```bash
-git clone https://github.com/saisubramanyam-dev/elite-sdet-automation.git
-cd elite-sdet-automation
+git clone https://github.com/saisubramanyam-dev/orderflow-sdet-automation.git
+cd orderflow-sdet-automation
 ```
 
 ---
