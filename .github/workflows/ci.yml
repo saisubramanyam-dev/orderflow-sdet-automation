@@ -1,4 +1,4 @@
-name: Elite SDET CI
+name: OrderFlow CI
 
 on:
   push:
