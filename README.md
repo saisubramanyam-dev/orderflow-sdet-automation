@@ -132,29 +132,30 @@ Database consistency is preserved even when business operations fail.
 
 OrderFlow follows a layered architecture that separates API routing, business logic, data access, and domain rules. This separation improves maintainability, testability, and scalability.
 
-```text
-                   Client / Test Suite
-                            │
-                            ▼
-                  FastAPI REST API
-                            │
-                  Request Validation
-                            │
-                            ▼
-                  Service Layer
-           ┌────────────────┴────────────────┐
-           │                                 │
-     Order Service                   Auth Service
-           │                                 │
-           └────────────────┬────────────────┘
-                            ▼
-                 Repository Layer
-           ┌────────────────┴────────────────┐
-           │                                 │
-     Order Repository                User Repository
-                            │
-                            ▼
-                    SQL Server Database
+```mermaid
+flowchart TD
+
+    A[Developer / GitHub Actions] --> B[Docker Environment]
+    B --> C[PyTest Automation Framework]
+
+    C --> D1[Unit Tests]
+    C --> D2[API Tests]
+    C --> D3[Database Tests]
+    C --> D4[Integration Tests]
+    C --> D5[Performance Tests]
+
+    D1 --> E[FastAPI Backend]
+    D2 --> E
+    D3 --> E
+    D4 --> E
+    D5 --> E
+
+    E --> F[Service Layer]
+    F --> G[Repository Layer]
+    G --> H[(SQL Server Database)]
+
+    H --> I[HTML Reports]
+    H --> J[Excel Reports]
 ```
 
 ### Design Principles
